@@ -1,17 +1,51 @@
----conexion
-public class Conexion {
-    Connection conectar;
-    
-    public Connection conectar(){
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            conectar = DriverManager.getConnection("jdbc:mysql://localhost:3307/cuarto", "root", "");
-         
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(null, ex);
-        }
-        return conectar;
-    }  
+<table border=1>
+        <thead>
+            <tr>
+                <th>Numero de Producto</th>
+                <th>Nombre de Producto</th>
+                <th>Categoria</th>
+                <th>Precio</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <?php
+            include "Select.php";
+            if ($resultado && $resultado->num_rows > 0) {
+                while ($fila = $resultado->fetch_assoc()) {
+            ?>
+                    <tr>
+                        <td><?php echo $fila['idPro'] ?></td>
+                        <td><?php echo $fila['nomPro'] ?></td>
+                        <td><?php echo $fila['idCatFK'] ?></td>
+                        <td><?php echo $fila['prePRo'] ?></td>
+                    </tr>
+                <?php
+                }
+            } elseif (isset($_POST["categoria"])) {
+                ?>
+                <th>
+                <td colspan="4"> No existen productos para esta categoria</td>
+                </th>
+            <?php
+            }
+            ?>
+
+        </tbody>
+    </table>
+
+
+
+
+
+<?php
+$resultado = false;
+include "conexion.php";
+if (isset($_POST["categoria"])) {
+    $categoria = $_POST["categoria"];
+    // La tabla que contiene 'idCatFK' se llama 'produc' en tu base de datos, no 'productos'
+    $sqlSelect = "select * from produc where idCatFK = (select idCat from categoria where NomCat = '$categoria')";
+    $resultado = $mysqli->query($sqlSelect);
 }
 
 
@@ -22,209 +56,3 @@ public class Conexion {
 
 
 
----dao
-public class DAO {
-
-    public DAO() {
-    }
-    
-    public boolean insertEstudent(Estudiante est){
-        try{
-          Conexion cn = new Conexion();
-          Connection cc = cn.conectar();
-          String sql = "insert into estudiantes values (?,?,?,?,?)";
-          PreparedStatement psd = cc.prepareStatement(sql);
-          psd.setString(1, est.getEstCedula());
-          psd.setString(2, est.getEstNombre());
-          psd.setString(3, est.getEstApellido());
-          psd.setString(4, est.getEstCDireccion());
-          psd.setString(5, est.getEstTelefono());
-          int r = psd.executeUpdate();
-            if (r>0) {
-                return true ;
-            }
-          
-        }
-        catch(Exception e){
-            JOptionPane.showMessageDialog(null,e );
-        }
-       return false;
-    }
-
-    public List<Estudiante> selectEstudent(){
-        try{
-            List<Estudiante> lista = new ArrayList();
-            Conexion cn = new Conexion();
-            Connection cc = cn.conectar();
-            String sql ="Select * from estudiantes";
-            Statement std = cc.createStatement();
-            ResultSet rs = std.executeQuery(sql);
-            while(rs.next()){
-               Estudiante est = new Estudiante(rs.getString("estCedula"), 
-                                                rs.getString("estNombre"), 
-                                                rs.getString("estApellido"), 
-                                                rs.getString("estDireccion"), 
-                                                rs.getString("estTelefono"));
-                lista.add(est);
-            }
-            return lista;
-            
-        }catch(Exception e){
-            JOptionPane.showMessageDialog(null, "No se selecciono correctamente. Comuniquese con el administrador");
-        
-        }
-        return null;
-    }
-
-    public void deleteEstudentDao(Estudiante est){
-        try {
-            Conexion cn = new Conexion();
-            Connection cc = cn.conectar();
-            String sql = "delete from estudiantes where estCedula = '"+est.getEstCedula()+"' ";
-            PreparedStatement psd = cc.prepareStatement(sql); 
-            int res = psd.executeUpdate();
-            if(res>0){
-                JOptionPane.showMessageDialog(null, "Se borro corectamente");
-            }
-        } catch (SQLException ex) {
-           JOptionPane.showMessageDialog(null, "No se borro, por favor comuniquese con el administrador");
-        }
-    }
-
-     public void updateEstudentDao(Estudiante est){
-      try {
-            Conexion cn = new Conexion();
-            Connection cc = cn.conectar();
-            String sql = "UPDATE estudiantes SET "
-           + "estNombre = '" + est.getEstNombre() + "', "
-           + "estApellido = '" + est.getEstApellido() + "', "
-           + "estDireccion = '" + est.getEstCDireccion() + "', "
-           + "estTelefono = '" + est.getEstTelefono() + "' "
-           + "WHERE estCedula = '" + est.getEstCedula() + "'";
-                     
-            PreparedStatement psd = cc.prepareStatement(sql);
-            int res = psd.executeUpdate();
-                if(res>0){
-                    JOptionPane.showMessageDialog(null, "Se actualizo corectamente");
-                }
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(null, "No se actualizo, por favor comuniquese con el administrador");        
-        }
-   }
-}
-
-
-
-
-
-
-
-jpanel
-public class Estudiantes extends javax.swing.JFrame {
-
-    DefaultTableModel model;
-    /**
-     * Creates new form Estudiantes
-     */
-    public Estudiantes() {
-        initComponents();
-        consumirSelectEstudentDao();
-        SelectRowEstudent();
-    }
-
-    public void SelectRowEstudent(){
-        jtblEstudiantes.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                if(jtblEstudiantes.getSelectedRow() != -1){
-                    int fila = jtblEstudiantes.getSelectedRow();
-                    jtxfCedula.setText(jtblEstudiantes.getValueAt(fila, 0).toString());
-                    jtxfNombre.setText(jtblEstudiantes.getValueAt(fila, 1).toString());
-                    jtxfApellido.setText(jtblEstudiantes.getValueAt(fila, 2).toString());
-                    jtxfDireccion.setText(jtblEstudiantes.getValueAt(fila, 3).toString());
-                    jtxfTelefono.setText(jtblEstudiantes.getValueAt(fila, 4).toString());
-                }
-            }
-        });
-    }
-
-    public void consumirSelectEstudentDao(){
-      try {
-            DAO dao = new DAO();
-            List<Estudiante> lista = dao.selectEstudent();
-            String titulos[] = {"CEDULA","NOMBRE","APELLIDO","DIRECCION","TELEFONO"};
-            String registros[] = new String[5];
-            model = new DefaultTableModel(null, titulos);
-            for (Estudiante est : lista) {
-                Object[] registro = {
-                est.getEstCedula(),
-                est.getEstNombre(),
-                est.getEstApellido(),
-                est.getEstCDireccion(),
-                est.getEstTelefono()
-                };
-                model.addRow(registro);
-            }
-            jtblEstudiantes.setModel(model);
-        } catch (Exception ex) {
-               JOptionPane.showMessageDialog(this, ex);
-        }
-    }
-
-    public void consumirDaoInsertar(){
-        Estudiante est = new Estudiante(jtxfCedula.getText(), jtxfNombre.getText(), jtxfApellido.getText(), jtxfDireccion.getText(), jtxfTelefono.getText());
-        DAO dao = new DAO();
-        boolean insertar = dao.insertEstudent(est);
-        if (insertar) {
-            JOptionPane.showMessageDialog(this, "Se inserto correctamente");
-            consumirSelectEstudentDao();     
-        }
-    }
-
-    public void consumirUpdateDAO(){
-        Estudiante est = new Estudiante(jtxfCedula.getText(), jtxfNombre.getText(), jtxfApellido.getText(), jtxfDireccion.getText(), jtxfTelefono.getText());
-        DAO dao = new DAO();
-        dao.updateEstudentDao(est);
-        consumirSelectEstudentDao();
-    }
-    
-    public void consumirDeleteDAO(){
-        Estudiante est = new Estudiante(jtxfCedula.getText(), jtxfNombre.getText(), jtxfApellido.getText(), jtxfDireccion.getText(), jtxfTelefono.getText());
-        DAO dao = new DAO();
-        dao.deleteEstudentDao(est);
-        consumirSelectEstudentDao();
-    }
-
-
- private void jbtnGuardarActionPerformed(java.awt.event.ActionEvent evt) {                                            
-        // TODO add your handling code here:
-        //insertEstudiantes();
-        consumirDaoInsertar();
-    }                                           
-
-    private void jbtnBorrarActionPerformed(java.awt.event.ActionEvent evt) {                                           
-        // TODO add your handling code here:
-        consumirDeleteDAO();
-    }                                          
-
-    private void jbtnEditarActionPerformed(java.awt.event.ActionEvent evt) {                                           
-        // TODO add your handling code here:
-        consumirUpdateDAO();
-    }                                          
-
-    private void jbtnReporteActionPerformed(java.awt.event.ActionEvent evt) {                                            
-        // TODO add your handling code here:
-        // Report functionality removed
-    }           
-
-
-
-
-
------Estudiantes
- public class Estudiante {
-    private String estCedula;
-    private String estNombre;
-    private String estApellido;
-    private String estCDireccion;
-    private String estTelefono;
